@@ -1,0 +1,9 @@
+c_device_name 3
+c_appearance 6
+c_battery_status 10
+c_rgb_red_led 14
+c_rgb_green_led 17
+c_rgb_blue_led 20
+c_l_motor 24
+c_r_motor 27
+c_ps_store_control 31

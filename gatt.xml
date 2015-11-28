@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration>
+
+    <!-- 1800: org.bluetooth.service.generic_access -->
+    <service uuid="1800" id="s_generic_access">
+        <description>Generic Access</description>
+
+        <!-- 2A00: org.bluetooth.characteristic.gap.device_name -->
+        <characteristic uuid="2A00" id="c_device_name">
+            <description>Device Name</description>
+            <properties read="true" write="true" />
+            <value type="user" />
+        </characteristic>
+
+        <!-- 2A01: org.bluetooth.characteristic.gap.appearance -->
+        <characteristic uuid="2A01" id="c_appearance">
+            <description>Appearance</description>
+            <properties read="true" const="true" />
+            <!-- Generic device, Generic category -->
+            <value type="hex">0000</value>
+         </characteristic>
+    </service>
+    
+    <!-- 180F: org.bluetooth.service.battery_service -->
+    <service uuid="180f" advertise="true">
+        <description>Battery Service</description>
+        <characteristic uuid="2a19" id="c_battery_status">
+            <properties read="true" notify="true"/>
+            <value length="1" />
+        </characteristic>
+    </service>
+    
+    <!-- UUIDs generated via http://www.guidgen.com/ -->
+    <!-- RGB LED Service -->
+    <service uuid="d5d62c0c-6f57-4ac0-bb97-2b694062756e" advertise="true">
+        <description>RGB LEDs</description>
+        
+        <characteristic uuid="05664686-5bf2-45a9-83c5-8a927cd2e20c" id="c_rgb_red_led">
+            <description>Red LED</description>
+            <properties read="true" write="true" />
+            <value type="user" length="1" />
+        </characteristic>
+        
+        <characteristic uuid="dc203e1a-bfa0-4647-9693-e923b1585cce" id="c_rgb_green_led">
+            <description>Green LED</description>
+            <properties read="true" write="true" />
+            <value type="user" length="1" />
+        </characteristic>
+        
+        <characteristic uuid="2aacf813-333d-4b6c-b997-45854b8424b1" id="c_rgb_blue_led">
+            <description>Blue LED</description>
+            <properties read="true" write="true" />
+            <value type="user" length="1" />
+        </characteristic>
+    </service>
+    
+    <!-- Dual Vibrator Motors Service -->
+    <service uuid="b8578989-149c-4849-91f0-2852935b1a86" advertise="true">
+        <description>Dual Vibrator Motors</description>
+        
+        <characteristic uuid="03957515-5976-41c3-982a-56cb6c4b4a38" id="c_l_motor">
+            <description>Left Motor</description>
+            <properties read="true" write="true" />
+            <value type="user" length="1" />
+        </characteristic>
+        
+        <characteristic uuid="537ef040-0e23-4fdc-80eb-eedd837ad98f" id="c_r_motor">
+            <description>Right Motor</description>
+            <properties read="true" write="true" />
+            <value type="user" length="1" />
+        </characteristic>
+    </service>
+    
+    <!-- PS Store Control Service -->
+    <service uuid="29f0dcfe-bebe-4348-9631-5fbd8e7fcb79" advertise="true">
+        <description>PS Store Control</description>
+        
+        <characteristic uuid="a0632df5-f8ad-401b-9f0f-80fd1f43edf3" id="c_ps_store_control">
+            <description>0: Reset PS Store  1: Save Device Name and RGB Values</description>
+            <properties write="true" />
+            <value type="user" />
+        </characteristic>
+    </service>
+        
+</configuration>
