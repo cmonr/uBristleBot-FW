@@ -1,7 +1,7 @@
 # IO Mapping [Peripheral Mapping]:
-#   P0.4: RGB LED (Red)         [16b PWM @ 1KHz]
-#   P0.5: RGB LED (Green)       [16b PWM @ 1KHz]
-#   P0.6: RGB LED (Blue PWM)    [16b PWM @ 1KHz]
+#   P0.3: RGB LED (Red)         [16b PWM @ ~1.95KHz]
+#   P0.4: RGB LED (Green)       [16b PWM @ ~1.95KHz]
+#   P0.5: RGB LED (Blue)        [16b PWM @ ~1.95KHz]
 #   P0.7: Battery Voltage Div   [12b ADC]
 #   P1.3: Left Motor            [8b PWM @ 32.125KHz]
 #   P1.4: Right Motor           [8b PWM @ 32.125KHz]
@@ -21,13 +21,13 @@ dim ledToggle       # Keeping track of LED toggling
 procedure set_pwm(timer, channel, value)
     # LED PWMs
     if timer = 1 then
-        if value = 255 then
-            call hardware_timer_comparator(timer, channel, 6, 3999)
+        if value = 0 then
+            call hardware_timer_comparator(timer, channel, 4, 1)
         else
-            call hardware_timer_comparator(timer, channel, 6, (value*4000) >> 8)
+            call hardware_timer_comparator(timer, channel, 4, (value << 8) | value)
         end if
     end if
-    
+
     # Motor PWMs
     if timer = 3 then
         if value = 0 then
@@ -43,32 +43,33 @@ end
 event system_boot(major, minor, patch, build, ll_version, protocol_version, hw)
     isConnected = 0
     isLipoOK = 1
-    
+
     lipoPercentage = 0
     ledToggle = 0
-    
+
     rMotor = 0  # Right Motor
     lMotor = 0  # Left Motor
-    
+
     # Restore varaibles from PS
     call restoreSystem()
-    
-    # Setup PWMs
-    #  T1 Clock = 4MHz
-    #   T1 Freq =  4MHz / 1 / 4000 = 1KHz
-    #   (4000-3999) / 4000 =  0.025%
-    #   (4000-1) / 4000    = 99.975%
-    call hardware_timer_comparator(1, 0, 6, 4000)  # Set Baseline Frequency
+
+
+    # Setup Timers for Motors and LEDs
+
+    # Global Timer Clock = 250KHz
+    #  T1 Clk = 250KHz / 128 = ~1.95KHz
     call set_pwm(1, 2, rLED)
     call set_pwm(1, 3, gLED)
     call set_pwm(1, 4, bLED)
-    #  T3 Clock = 4MHz / 128 = 31.25KHz
+    #  T3 Clk = 250KHz / 8 = 31.25KHz
     call set_pwm(3, 0, lMotor)
     call set_pwm(3, 1, rMotor)
-    
+
+
     # 2Hz Soft Timer
     call hardware_set_soft_timer(32768 >> 1, 0, 0)
-    
+
+
     # Enable advertising and make pairable
     call gap_set_mode(gap_user_data, gap_undirected_connectable)
     call sm_set_bondable_mode(1)
@@ -77,10 +78,10 @@ end
 # Connected to Client
 event connection_status(connection, flags, address, address_type, conn_interval, timeout, latency, bonding)
 	isConnected = 1
-    
+
     # Disable advertising
     call gap_set_mode(gap_non_discoverable, gap_non_connectable)
-    
+
     # Make LEDs solid
     call set_pwm(1, 2, rLED)
     call set_pwm(1, 3, gLED)
@@ -95,6 +96,14 @@ event connection_disconnected(handle, result)
     # Start advertising again, if LiPo is ok
     if isLipoOK then
         call gap_set_mode(gap_user_data, gap_undirected_connectable)
+
+        # Turn off motors
+        lMotor = 0
+        rMotor = 0
+
+        call set_pwm(3, 0, lMotor)
+        call set_pwm(3, 1, rMotor)
+
     end if
 end
 
@@ -106,32 +115,32 @@ event attributes_value(connection, reason, handle, offset, value_len, value)
         call set_pwm(1, 2, rLED)
         call attributes_user_write_response(connection, 0)
     end if
-    
+
     if handle = c_rgb_green_led then
         gLED = value(0:1)
         call set_pwm(1, 3, gLED)
         call attributes_user_write_response(connection, 0)
     end if
-    
+
     if handle = c_rgb_blue_led then
         bLED = value(0:1)
         call set_pwm(1, 4, bLED)
         call attributes_user_write_response(connection, 0)
     end if
-    
+
     # Motors
     if handle = c_l_motor then
         lMotor = value(0:1)
         call set_pwm(3, 0, lMotor)
         call attributes_user_write_response(connection, 0)
     end if
-    
+
     if handle = c_r_motor then
         rMotor = value(0:1)
         call set_pwm(3, 1, rMotor)
         call attributes_user_write_response(connection, 0)
     end if
-    
+
     # Device Name
     if handle = c_device_name then
         deviceName (0:20) = "                    "
@@ -139,7 +148,7 @@ event attributes_value(connection, reason, handle, offset, value_len, value)
         call attributes_user_write_response(connection, 0)
         call setCustomAdvertisement()
     end if
-    
+
     if handle = c_ps_store_control then
         if value(0:1) = 0 then
             # Clear PS Store
@@ -151,11 +160,10 @@ event attributes_value(connection, reason, handle, offset, value_len, value)
             call saveRGBValues()
         end if
         call attributes_user_write_response(connection, 0)
-        
+
         # Reset the device (makes the logic much simpler)
         call connection_disconnect(0)
         call dfu_reset(0)
-        
     end if
 end
 
@@ -171,14 +179,14 @@ event attributes_user_read_request(connection, handle, offset, maxsize)
     if handle = c_rgb_blue_led then
         call attributes_user_read_response(connection, 0, 1, bLED)
     end if
-    
+
     if handle = c_l_motor then
         call attributes_user_read_response(connection, 0, 1, lMotor)
     end if
     if handle = c_r_motor then
         call attributes_user_read_response(connection, 0, 1, rMotor)
     end if
-    
+
     if handle = c_device_name then
         call attributes_user_read_response(connection, 0, 20, deviceName(0:20))
     end if
@@ -194,14 +202,14 @@ event hardware_soft_timer(handle)
         #  3: 12 bit resolution
         #  2: AVDD is the ADC's reference
         call hardware_adc_read(7, 3, 2)
-        
+
         # Send Lipo Status if connected
         if isConnected = 1 then
             call attributes_write(c_battery_status, 0, 1, lipoPercentage)
         end if
     end if
-    
-    
+
+
     # Toggle RGB LEDs
     if isConnected = 0 then
         if ledToggle = 1 then
@@ -213,7 +221,7 @@ event hardware_soft_timer(handle)
             call set_pwm(1, 3, 0)
             call set_pwm(1, 4, 0)
         end if
-        
+
         ledToggle = 1-ledToggle
     end if
 end
@@ -225,20 +233,20 @@ event hardware_adc_result(input, value)
     #  Value Range = [-32768, +32767]
     #  Battery Voltage through Resistor Divider =
     #   (value >> 4) * 3.3 / 2048
-    
+
     # Valid Battery Voltage Ranges:
     #  100% = 4.2v / 2 = 2.1v
     #    0% = 3v   / 2 = 1.5v
     #    0% = 3.4v / 2 = 1.7v (LDO)
-    
+
     # Valid ADC Ranges
     #  100% = 2.1v * (32768 / 3.3v) = 20852
     #    0% = 1.5v * (32768 / 3.3v) = 14894
     #    0% = 1.7v * (32768 / 3.3v) = 16880 (LDO)
-    
+
     # Scale ADC Result to valid range
     lipoPercentage = (value - 16880) * 100 / (20852 - 16880)
-    
+
     # It's still possible to exceed 0%-100% range
     #  Make sure this doesn't happen
     if lipoPercentage > 100 then
@@ -247,23 +255,23 @@ event hardware_adc_result(input, value)
     if lipoPercentage < 0 then
         lipoPercentage = 0
     end if
-    
+
     # Check for LiPo state
     isLipoOK = 1
     if lipoPercentage <= 5 then
         # Battery is about to die
         isLipoOK = 0
-        
+
         # Disconnect if connected
         if isConnected = 1 then
             call connection_disconnect(0)
         end if
-        
+
         # Set RGB LED to Red
         rLED = 255
         gLED = 0
         bLED = 0
-        
+
         # Change blink rate to 8Hz
         call hardware_set_soft_timer(0, 0, 0)   # Stop timer first
         call hardware_set_soft_timer(32768 >> 3, 0, 0)
