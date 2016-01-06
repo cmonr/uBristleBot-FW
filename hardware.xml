@@ -2,9 +2,9 @@
 <hardware>
     <sleeposc enable="true" ppm="30" />
     <sleep enable="false" />
-    <txpower power="15" bias="5" />
+    <txpower power="9" bias="5" />
     <script enable="true" />
-	<timer_ticks speed="7" />
-  <timer index="1" alternalte="1" enabled_channels="0x0E" divisor="3" mode="1" />
-	<timer index="3" alternalte="1" enabled_channels="0x03" divisor="3" mode="0" />
+    <timer_ticks speed="2" />
+    <timer index="1" alternalte="1" enabled_channels="0x0C" divisor="0" mode="1" />
+    <timer index="3" alternalte="1" enabled_channels="0x03" divisor="0" mode="0" />
 </hardware>
