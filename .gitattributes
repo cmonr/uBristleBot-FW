@@ -1,0 +1,6 @@
+# Default behavior
+* text=auto
+
+# BGScript Project files
+*.xml text eol=crlf
+*.bgs text eol=crlf
