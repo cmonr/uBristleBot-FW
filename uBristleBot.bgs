@@ -241,15 +241,13 @@ event hardware_adc_result(input, value)
     # Valid Battery Voltage Ranges:
     #  100% = 4.2v / 2 = 2.1v
     #    0% = 3v   / 2 = 1.5v
-    #    0% = 3.4v / 2 = 1.7v (LDO)
 
     # Valid ADC Ranges
     #  100% = 2.1v * (32768 / 3.3v) = 20852
     #    0% = 1.5v * (32768 / 3.3v) = 14894
-    #    0% = 1.7v * (32768 / 3.3v) = 16880 (LDO)
 
     # Scale ADC Result to valid range
-    lipoPercentage = (value - 16880) * 100 / (20852 - 16880)
+    lipoPercentage = (value - 14894) * 100 / (20852 - 14894)
 
     # It's still possible to exceed 0%-100% range
     #  Make sure this doesn't happen
@@ -262,22 +260,22 @@ event hardware_adc_result(input, value)
 
     # Check for LiPo state
     isLipoOK = 1
-    #if lipoPercentage <= 5 then
-    #    # Battery is about to die
-    #    isLipoOK = 0
+    if lipoPercentage <= 5 then
+        # Battery is about to die
+        isLipoOK = 0
 
-    #    # Disconnect if connected
-    #    if isConnected = 1 then
-    #        call connection_disconnect(0)
-    #    end if
+        # Disconnect if connected
+        if isConnected = 1 then
+            call connection_disconnect(0)
+        end if
 
-    #    # Set RGB LED to Red
-    #    rLED = 255
-    #    gLED = 0
-    #    bLED = 0
+        # Set RGB LED to Red
+        rLED = 255
+        gLED = 0
+        bLED = 0
 
-    #    # Change blink rate to 8Hz
-    #    call hardware_set_soft_timer(0, 0, 0)   # Stop timer first
-    #    call hardware_set_soft_timer(32768 >> 3, 0, 0)
-    #end if
+        # Change blink rate to 8Hz
+        call hardware_set_soft_timer(0, 0, 0)   # Stop timer first
+        call hardware_set_soft_timer(32768 >> 3, 0, 0)
+    end if
 end
