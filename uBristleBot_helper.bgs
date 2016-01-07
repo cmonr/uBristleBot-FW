@@ -28,7 +28,7 @@ export procedure saveRGBValues()
     psData(0:1) = rLED
     psData(1:1) = gLED
     psData(2:1) = bLED
-    
+
     # Save data
     call flash_ps_save($8001, 3, psData(0:3))
 end
@@ -49,19 +49,19 @@ export procedure setCustomAdvertisement()
     # when using "hardware_set_txpower(<power>)". This may be anywhere from -23
     # to +3 based on your settings. Negative values may be converted to two's
     # complement form by adding 256, so for example -23 dBm would be 233 or $E9.
-    
+
     # custom manufacturer
     advData(6:1) = $06 # ad field length = 5 bytes (arbitrary, maybe more or less but minimum 3)
     advData(7:1) = $ff # ad field type = 0xFF (Manufacturer Specific Data)
-    advData(8:1) = $ff # unknown/prototype Company Identifier Code - octet 2 
-    advData(9:1) = $ff # unknown/prototype Company Identifier Code - octet 1 
+    advData(8:1) = $ff # unknown/prototype Company Identifier Code - octet 2
+    advData(9:1) = $ff # unknown/prototype Company Identifier Code - octet 1
     advData(10:1) = $b1 # custom data byte #1 (can be anything)
     advData(11:1) = $b2 # custom data byte #2 (can be anything)
     advData(12:1) = $b3 # custom data byte #3 (can be anything)
 
     call gap_set_adv_data(0, 13, advData(0:13))
 
-    
+
     call attributes_write(c_device_name, 0, 20, deviceName(0:20))
     advData(0:1) = 21
     advData(1:1) = gap_ad_type_localname_complete
@@ -73,13 +73,13 @@ end
 export procedure restoreSystem()
     # Init Defaults
     deviceName(0:20) = "BristleBot          "
-    rLED = 191
-    gLED = 87
-    bLED = 0
-    
+    rLED = 255
+    gLED = 255
+    bLED = 255
+
     # Load name from PS
     call flash_ps_load($8000)(psResult, psDataLen, psData(0:20))
-    
+
     # Compare name loaded from PS with deviceName
     tmp = 0
     while tmp < 20 && tmp != -1
@@ -88,11 +88,11 @@ export procedure restoreSystem()
             tmp = -1
         end if
     end while
-    
+
     if tmp != -1 then
         # PS Store is blank
         # Assuming first boot
-        
+
         # Append MAC to Default Name
         #  while converting each hex value to ASCII
         call system_address_get()(macAddr(0:6))
@@ -103,25 +103,25 @@ export procedure restoreSystem()
         deviceName(15:1) = (macAddr(1:1)&$f)  + 48 + ((macAddr(1:1)&$f )/10*7)
         deviceName(16:1) = $3a
         deviceName(17:1) = (macAddr(0:1)/$10) + 48 + ((macAddr(0:1)/$10)/10*7)
-        deviceName(18:1) = (macAddr(0:1)&$f)  + 48 + ((macAddr(0:1)&$f )/10*7)     
+        deviceName(18:1) = (macAddr(0:1)&$f)  + 48 + ((macAddr(0:1)&$f )/10*7)
         # Clean PS Store (just in case)
         call flash_ps_erase($8000)
         call flash_ps_erase($8001)
-        
+
         # Save defaults
         call saveDeviceName()
-        call saveRGBValues()  
+        call saveRGBValues()
     else
         # Restore device name
         #  We already have the name
         deviceName(0:20) = psData(0:20)
-        
+
         # Load RGB values from PS
         call flash_ps_load($8001)(psResult, psDataLen, psData(0:3))
         rLED = psData(0:1)
         gLED = psData(1:1)
         bLED = psData(2:1)
     end if
-    
+
     call setCustomAdvertisement()
 end

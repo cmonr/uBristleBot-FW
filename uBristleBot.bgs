@@ -1,7 +1,7 @@
 # IO Mapping [Peripheral Mapping]:
-#   P0.3: RGB LED (Red)         [16b PWM @ ~120Hz]
-#   P0.4: RGB LED (Green)       [16b PWM @ ~120Hz]
-#   P0.5: RGB LED (Blue)        [16b PWM @ ~120Hz]
+#   P0.3: RGB LED (Red)
+#   P0.4: RGB LED (Green)
+#   P0.5: RGB LED (Blue)
 #   P0.7: Battery Voltage Div   [12b ADC]
 #   P1.3: Left Motor            [8b PWM @ ~30KHz]
 #   P1.4: Right Motor           [8b PWM @ ~30KHz]
@@ -21,10 +21,12 @@ dim ledToggle       # Keeping track of LED toggling
 procedure set_pwm(timer, channel, value)
     # LED PWMs
     if timer = 1 then
-        if value = 0 then
-            call hardware_timer_comparator(timer, channel, 4, 1)
+        if value <= 127 then
+          # Turn ON
+          call hardware_io_port_write(0, 1 << (channel+2), 0)
         else
-            call hardware_timer_comparator(timer, channel, 4, (value << 8) + value)
+          # Turn OFF
+          call hardware_io_port_write(0, 1 << (channel+2), 1 << (channel+2))
         end if
     end if
 
@@ -54,8 +56,10 @@ event system_boot(major, minor, patch, build, ll_version, protocol_version, hw)
     call restoreSystem()
 
 
-    # Setup Timers for Motors and LEDs
+    # Setup GPIO for LEDs
+    call hardware_io_port_config_direction(0, $38)
 
+    # Setup Timers for Motors and LEDs
     # Global Timer Clock = 8MHz
     #  T1 Clk = 8MHz / 1 / 2^16 = ~120Hz
     call set_pwm(1, 1, rLED)
