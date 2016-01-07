@@ -33,9 +33,9 @@ procedure set_pwm(timer, channel, value)
     # Motor PWMs
     if timer = 3 then
         if value = 0 then
-            call hardware_timer_comparator(timer, 0, 6, 1)
+            call hardware_timer_comparator(timer, channel, 6, 1)
         else
-            call hardware_timer_comparator(timer, 0, 6, value)
+            call hardware_timer_comparator(timer, channel, 6, value)
         end if
     end if
 end
