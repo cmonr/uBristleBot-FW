@@ -21,12 +21,10 @@ dim ledToggle       # Keeping track of LED toggling
 procedure set_pwm(timer, channel, value)
     # LED PWMs
     if timer = 1 then
-        if value <= 127 then
-          # Turn ON
-          call hardware_io_port_write(0, 1 << (channel+2), 0)
+        if value = 0 then
+            call hardware_timer_comparator(timer, channel, 6, 1)
         else
-          # Turn OFF
-          call hardware_io_port_write(0, 1 << (channel+2), 1 << (channel+2))
+            call hardware_timer_comparator(timer, channel, 6, (value << 8) + value)
         end if
     end if
 
@@ -55,9 +53,6 @@ event system_boot(major, minor, patch, build, ll_version, protocol_version, hw)
     # Restore varaibles from PS
     call restoreSystem()
 
-
-    # Setup GPIO for LEDs
-    call hardware_io_port_config_direction(0, $38)
 
     # Setup Timers for Motors and LEDs
     # Global Timer Clock = 8MHz

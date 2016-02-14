@@ -6,5 +6,6 @@
     <script enable="true" />
     <timer_ticks speed="2" />
     <port index="0" pull="down" />
-    <timer index="3" alternalte="1" enabled_channels="0x03" divisor="0" mode="0" />
+    <timer index="1" alternate="1" enabled_channels="0x0E" divisor="3" mode="1" />
+    <timer index="3" alternate="1" enabled_channels="0x03" divisor="0" mode="0" />
 </hardware>
