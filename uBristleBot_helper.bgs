@@ -80,16 +80,8 @@ export procedure restoreSystem()
     # Load name from PS
     call flash_ps_load($8000)(psResult, psDataLen, psData(0:20))
 
-    # Compare name loaded from PS with deviceName
-    tmp = 0
-    while tmp < 20 && tmp != -1
-        tmp = tmp + 4
-        if psData(tmp:4) != $0000 then
-            tmp = -1
-        end if
-    end while
-
-    if tmp != -1 then
+    # Compare first byte
+    if psData(0:4) = $0000 then
         # PS Store is blank
         # Assuming first boot
 
@@ -104,6 +96,7 @@ export procedure restoreSystem()
         deviceName(16:1) = $3a
         deviceName(17:1) = (macAddr(0:1)/$10) + 48 + ((macAddr(0:1)/$10)/10*7)
         deviceName(18:1) = (macAddr(0:1)&$f)  + 48 + ((macAddr(0:1)&$f )/10*7)
+
         # Clean PS Store (just in case)
         call flash_ps_erase($8000)
         call flash_ps_erase($8001)
