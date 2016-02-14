@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<hardware>
+    <sleeposc enable="true" ppm="30" />
+    <sleep enable="false" />
+    <txpower power="9" bias="5" />
+    <script enable="true" />
+    <timer_ticks speed="2" />
+    <port index="0" pull="down" />
+    <timer index="3" alternalte="1" enabled_channels="0x03" divisor="0" mode="0" />
+</hardware>

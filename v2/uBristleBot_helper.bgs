@@ -1,0 +1,120 @@
+# Flash Mapping (with Notes):
+#  $8000: Device Name
+#  $8001: RGB LED Values    (8b each)
+
+export dim deviceName(20)
+export dim rLED, gLED, bLED
+
+dim psResult
+dim psData(32)
+dim psDataLen
+
+dim macAddr(6)
+
+dim advData(32)
+
+dim tmp
+
+
+# Save current RGB Values to PS Store
+export procedure saveDeviceName()
+    # Save data
+    call flash_ps_save($8000, 20, deviceName(0:20))
+end
+
+# Save current RGB Values to PS Store
+export procedure saveRGBValues()
+    # Capture current values
+    psData(0:1) = rLED
+    psData(1:1) = gLED
+    psData(2:1) = bLED
+
+    # Save data
+    call flash_ps_save($8001, 3, psData(0:3))
+end
+
+
+# Set device name in advertisement
+export procedure setCustomAdvertisement()
+    # flags for discoverable/connectable
+    advData(0:1) = $02 # ad field length = 2 bytes
+    advData(1:1) = gap_ad_type_flags   # ad field type = 0x01 (Flags)
+    advData(2:1) = $06 # flags = 0x06, connectable/undirected
+
+    # tx power field advertisement, iOS apps may need this
+    advData(3:1) = $02 # ad field length = 2 bytes
+    advData(4:1) = gap_ad_type_txpower    # ad field type = 0x0A (TX Power)
+    advData(5:1) = $03 # TX power in dBm
+    # NOTE: TX power is a signed 8-bit value, and is not changed automatically
+    # when using "hardware_set_txpower(<power>)". This may be anywhere from -23
+    # to +3 based on your settings. Negative values may be converted to two's
+    # complement form by adding 256, so for example -23 dBm would be 233 or $E9.
+
+    # custom manufacturer
+    advData(6:1) = $06 # ad field length = 5 bytes (arbitrary, maybe more or less but minimum 3)
+    advData(7:1) = $ff # ad field type = 0xFF (Manufacturer Specific Data)
+    advData(8:1) = $ff # unknown/prototype Company Identifier Code - octet 2
+    advData(9:1) = $ff # unknown/prototype Company Identifier Code - octet 1
+    advData(10:1) = $b1 # custom data byte #1 (can be anything)
+    advData(11:1) = $b2 # custom data byte #2 (can be anything)
+    advData(12:1) = $b3 # custom data byte #3 (can be anything)
+
+    call gap_set_adv_data(0, 13, advData(0:13))
+
+
+    call attributes_write(c_device_name, 0, 20, deviceName(0:20))
+    advData(0:1) = 21
+    advData(1:1) = gap_ad_type_localname_complete
+    advData(2:20) = deviceName(0:20)
+    call gap_set_adv_data(1, 22, advData(0:22))
+end
+
+
+export procedure restoreSystem()
+    # Init Defaults
+    deviceName(0:20) = "BristleBot          "
+    rLED = 255
+    gLED = 255
+    bLED = 255
+
+    # Load name from PS
+    call flash_ps_load($8000)(psResult, psDataLen, psData(0:20))
+
+    # Compare first byte
+    if psData(0:4) = $0000 then
+        # PS Store is blank
+        # Assuming first boot
+
+        # Append MAC to Default Name
+        #  while converting each hex value to ASCII
+        call system_address_get()(macAddr(0:6))
+        deviceName(11:1) = (macAddr(2:1)/$10) + 48 + ((macAddr(2:1)/$10)/10*7)
+        deviceName(12:1) = (macAddr(2:1)&$f)  + 48 + ((macAddr(2:1)&$f )/10*7)
+        deviceName(13:1) = $3a
+        deviceName(14:1) = (macAddr(1:1)/$10) + 48 + ((macAddr(1:1)/$10)/10*7)
+        deviceName(15:1) = (macAddr(1:1)&$f)  + 48 + ((macAddr(1:1)&$f )/10*7)
+        deviceName(16:1) = $3a
+        deviceName(17:1) = (macAddr(0:1)/$10) + 48 + ((macAddr(0:1)/$10)/10*7)
+        deviceName(18:1) = (macAddr(0:1)&$f)  + 48 + ((macAddr(0:1)&$f )/10*7)
+
+        # Clean PS Store (just in case)
+        call flash_ps_erase($8000)
+        call flash_ps_erase($8001)
+
+        # Save defaults
+        call saveDeviceName()
+        call saveRGBValues()
+    else
+        # Restore device name
+        #  We already have the name
+        deviceName(0:20) = psData(0:20)
+
+        # Load RGB values from PS
+        call flash_ps_load($8001)(psResult, psDataLen, psData(0:3))
+        rLED = psData(0:1)
+        gLED = psData(1:1)
+        bLED = psData(2:1)
+    end if
+
+    call setCustomAdvertisement()
+end
