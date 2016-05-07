@@ -16,6 +16,7 @@ dim lipoPercentage  # LiPo Battery Percentage (through resistor divider)
 dim isLipoOK        # Checks for LiPo state after percentage calculation
 dim ledToggle       # Keeping track of LED toggling
 
+dim readTmpBuff(3)
 
 
 procedure set_pwm(timer, channel, value)
@@ -109,33 +110,21 @@ end
 # Handle write operations from Client (Android App)
 event attributes_value(connection, reason, handle, offset, value_len, value)
     # RGB LEDs
-    if handle = c_rgb_red_led then
-        rLED = value(0:1)
-        call set_pwm(1, 2, rLED)
-        call attributes_user_write_response(connection, 0)
-    end if
-
-    if handle = c_rgb_green_led then
-        gLED = value(0:1)
-        call set_pwm(1, 3, gLED)
-        call attributes_user_write_response(connection, 0)
-    end if
-
-    if handle = c_rgb_blue_led then
+    if handle = c_rgb_leds then
+        rLED = value(2:1)
+        gLED = value(1:1)
         bLED = value(0:1)
+        call set_pwm(1, 2, rLED)
+        call set_pwm(1, 3, gLED)
         call set_pwm(1, 4, bLED)
         call attributes_user_write_response(connection, 0)
     end if
 
     # Motors
-    if handle = c_l_motor then
+    if handle = c_motors then
         lMotor = value(0:1)
+        rMotor = value(1:1)
         call set_pwm(3, 0, lMotor)
-        call attributes_user_write_response(connection, 0)
-    end if
-
-    if handle = c_r_motor then
-        rMotor = value(0:1)
         call set_pwm(3, 1, rMotor)
         call attributes_user_write_response(connection, 0)
     end if
@@ -169,21 +158,17 @@ end
 
 # Handle read requests from Client (Android App)
 event attributes_user_read_request(connection, handle, offset, maxsize)
-    if handle = c_rgb_red_led then
-        call attributes_user_read_response(connection, 0, 2, rLED)
-    end if
-    if handle = c_rgb_green_led then
-        call attributes_user_read_response(connection, 0, 1, gLED)
-    end if
-    if handle = c_rgb_blue_led then
-        call attributes_user_read_response(connection, 0, 1, bLED)
+    if handle = c_rgb_leds then
+        readTmpBuff(2:1) = rLED
+        readTmpBuff(1:1) = gLED
+        readTmpBuff(0:1) = bLED
+        call attributes_user_read_response(connection, 0, 3, readTmpBuff(0:3))
     end if
 
-    if handle = c_l_motor then
-        call attributes_user_read_response(connection, 0, 1, lMotor)
-    end if
-    if handle = c_r_motor then
-        call attributes_user_read_response(connection, 0, 1, rMotor)
+    if handle = c_motors then
+        readTmpBuff(1:1) = lMotor
+        readTmpBuff(0:1) = rMotor
+        call attributes_user_read_response(connection, 0, 2, readTmpBuff(0:2))
     end if
 
     if handle = c_device_name then
