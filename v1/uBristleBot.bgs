@@ -116,19 +116,19 @@ end
 event attributes_value(connection, reason, handle, offset, value_len, value)
     # RGB LEDs
     if handle = c_rgb_leds then
-        rLED = value(2:1)
+        rLED = value(0:1)
         gLED = value(1:1)
-        bLED = value(0:1)
+        bLED = value(2:1)
         call set_pwm(1, 1, rLED)
-        call set_pwm(1, 2, rLED)
-        call set_pwm(1, 3, rLED)
+        call set_pwm(1, 2, gLED)
+        call set_pwm(1, 3, bLED)
         call attributes_user_write_response(connection, 0)
     end if
 
     # Motors
     if handle = c_motors then
-        lMotor = value(1:1)
         lMotor = value(0:1)
+        rMotor = value(1:1)
         call set_pwm(3, 0, lMotor)
         call set_pwm(3, 1, rMotor)
         call attributes_user_write_response(connection, 0)
